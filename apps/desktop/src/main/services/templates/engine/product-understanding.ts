@@ -58,15 +58,6 @@ function parsePrompt(prompt: string): {
     socialnetwork: { section: "webapps", archetype: "social" },
     learningplatform: { section: "webapps", archetype: "dashboard" },
 
-    // AI applications
-    "ai-chatbot": { section: "ai", archetype: "ai-app" },
-    rag: { section: "ai", archetype: "ai-app" },
-    "ai-agent": { section: "ai", archetype: "ai-app" },
-    "ai-saas": { section: "ai", archetype: "saas" },
-    "document-analyzer": { section: "ai", archetype: "ai-app" },
-    "ai-customersupport": { section: "ai", archetype: "ai-app" },
-    "ai-search": { section: "ai", archetype: "ai-app" },
-
     // Mobile
     "mobile-social": { section: "mobile", archetype: "pwa" },
     "mobile-fitness": { section: "mobile", archetype: "pwa" },

@@ -410,7 +410,6 @@ export function briefFor(familyId: string, variantIndex: number, name: string): 
 
 function familySection(familyId: string): string {
   if (familyId.startsWith("mobile-")) return "mobile";
-  if (familyId.startsWith("ai-") || familyId === "rag") return "ai";
   if (["game-2d", "game-3d", "game-multiplayer", "game-puzzle", "game-arcade"].includes(familyId)) return "games";
   if (["rest-api", "graphql-api", "cli", "sdk", "packages", "browser-extension"].includes(familyId)) return "developer";
   if (["dev-tools", "desktop-productivity", "media", "file-manager", "business-software"].includes(familyId)) return "desktop";

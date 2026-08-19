@@ -1,7 +1,7 @@
 import type { RideTemplate, TemplateQuestion } from "@ride/contracts";
 import { accentForVariant, briefFor } from "./engine/briefs";
 
-export type Section = "websites" | "webapps" | "ai" | "mobile" | "desktop" | "developer" | "games" | "starter";
+export type Section = "websites" | "webapps" | "mobile" | "desktop" | "developer" | "games" | "starter";
 
 export type ArchetypeId =
   | "portfolio"
@@ -21,7 +21,7 @@ export type ArchetypeId =
   | "arcade"
   | "custom";
 
-export const SECTIONS: Section[] = ["websites", "webapps", "ai", "mobile", "desktop", "developer", "games", "starter"];
+export const SECTIONS: Section[] = ["websites", "webapps", "mobile", "desktop", "developer", "games", "starter"];
 
 export interface BuiltinTemplate extends RideTemplate {
   archetype: ArchetypeId;
@@ -428,111 +428,7 @@ const FAMILIES: Family[] = [
     variants: ["Online Academy", "Coding Platform", "University LMS", "School LMS", "Skill Learning", "Language Learning", "Exam Preparation", "AI Tutor", "Corporate Training", "Course Marketplace"],
   },
 
-  // ─── AI applications ─────────────────────────────────────────────────────
-  {
-    id: "ai-chatbot",
-    name: "AI Chatbot",
-    section: "ai",
-    emoji: "🤖",
-    archetype: "ai-app",
-    tagline: "Chat shell — conversations, message bubbles, streaming, suggestions.",
-    features: ["Chat UI", "Streaming-ready", "Conversation list", "Prompt suggestions", "Typing indicator", "Dark mode"],
-    questions: [
-      { id: "appName", label: "App name", kind: "text", placeholder: "Copilot", required: true },
-      q({ id: "persona", label: "Assistant persona", kind: "select", options: ["General assistant", "Coding copilot", "Writer", "Research"], defaultValue: "General assistant" }),
-    ],
-    brief:
-      "AI chat starter scaffolded by RIDE. Contains a chat shell with message bubbles, a typing indicator and a prompt input. Replace placeholder branding and examples with the user's app. Keep the React + Vite + Tailwind stack.",
-    prompt:
-      "Customize this AI chat starter for {appName}, a {persona}. Replace placeholder branding, welcome message and example prompts with plausible content for {appName}. Keep the React + Vite + Tailwind stack.",
-    variants: ["AI Assistant", "Customer Chatbot", "Enterprise Chat", "Document Chat", "Code Assistant", "Research Assistant", "Education Tutor", "Healthcare Assistant", "Travel Assistant", "Personal AI"],
-  },
-  {
-    id: "rag",
-    name: "RAG",
-    section: "ai",
-    emoji: "🧩",
-    archetype: "ai-app",
-    tagline: "Retrieval app shell — document library, chat, sources panel.",
-    features: ["Document library", "Chat with sources", "Citations", "Upload area", "Dark mode"],
-    brief:
-      "RAG starter scaffolded by RIDE. Based on the AI chat shell with a document library sidebar; wire retrieval + citations. Replace placeholder docs and sources with the user's knowledge base. Keep the React + Vite + Tailwind stack.",
-    prompt:
-      "Customize this RAG starter into a {name}. Replace the placeholder document library and chat content with plausible retrieval examples (PDFs, internal docs). Add a sources/citations panel. Keep the React + Vite + Tailwind stack.",
-    variants: ["PDF Knowledge Base", "Company Knowledge AI", "Research RAG", "Legal Document RAG", "Technical Docs RAG", "University Knowledge Base", "Support RAG", "Financial Research RAG", "Medical Literature RAG", "Multi-Document AI"],
-  },
-  {
-    id: "ai-agent",
-    name: "AI Agent",
-    section: "ai",
-    emoji: "🦾",
-    archetype: "ai-app",
-    tagline: "Agent console — runs, tool calls, logs, targets, config.",
-    features: ["Run console", "Tool timeline", "Logs", "Targets", "Config panel", "Dark mode"],
-    brief:
-      "AI agent console starter scaffolded by RIDE. Based on the chat shell, shaped as a task/run console with a tool-use timeline. Replace placeholder runs with the user's agent workflow. Keep the React + Vite + Tailwind stack.",
-    prompt:
-      "Customize this agent console starter into a {name}. Shape the chat shell into a run console: tasks, tool calls, logs and results. Replace placeholder content with plausible agent workflow examples. Keep the React + Vite + Tailwind stack.",
-    variants: ["Research Agent", "Coding Agent", "Sales Agent", "Marketing Agent", "Support Agent", "Travel Agent", "Recruitment Agent", "Data Agent", "Business Agent", "Personal Automation Agent"],
-  },
-  {
-    id: "ai-saas",
-    name: "AI SaaS",
-    section: "ai",
-    emoji: "✨",
-    archetype: "saas",
-    tagline: "AI product shell — marketing + app demo, pricing, credits.",
-    features: ["Pitch hero", "Live demo", "Pricing with credits", "Waitlist", "Dark mode"],
-    brief:
-      "AI SaaS starter scaffolded by RIDE (SaaS archetype). Replace placeholder pitch, demo and pricing with the user's AI product. Keep the React + Vite + Tailwind stack.",
-    prompt:
-      "Customize this AI SaaS template for a {name}. Replace the placeholder hero, demo embed, credit-based pricing tiers and CTA with plausible content. Keep the React + Vite + Tailwind stack.",
-    variants: ["AI Writing SaaS", "AI Design SaaS", "AI Video SaaS", "AI Marketing SaaS", "AI Sales SaaS", "AI Recruiting SaaS", "AI Analytics SaaS", "AI Research SaaS", "AI Support SaaS", "AI Developer SaaS"],
-  },
-  {
-    id: "document-analyzer",
-    name: "Document Analyzer",
-    section: "ai",
-    emoji: "🔍",
-    archetype: "ai-app",
-    tagline: "Analyzer shell — upload, extraction pane, insights, exports.",
-    features: ["Upload", "Extraction pane", "Insights", "Export", "Dark mode"],
-    brief:
-      "Document analyzer starter scaffolded by RIDE. Based on the AI chat shell with an upload area and an extraction/insights pane. Replace placeholder documents with the user's domain. Keep the React + Vite + Tailwind stack.",
-    prompt:
-      "Customize this analyzer starter into a {name}. Shape the shell for upload → extraction → insights → export. Replace placeholder document examples with plausible domain content. Keep the React + Vite + Tailwind stack.",
-    variants: ["PDF Analyzer", "Contract Analyzer", "Resume Analyzer", "Invoice Analyzer", "Paper Analyzer", "Financial Report Analyzer", "Legal Doc Analyzer", "Academic Doc Analyzer", "Business Doc Analyzer", "Multi-Format Analyzer"],
-  },
-  {
-    id: "ai-customer-support",
-    name: "AI Customer Support",
-    section: "ai",
-    emoji: "🎧",
-    archetype: "ai-app",
-    tagline: "Support shell — tickets, live chat, KB answers, handoff.",
-    features: ["Ticket list", "Live chat", "KB answers", "Handoff", "Dark mode"],
-    brief:
-      "AI support starter scaffolded by RIDE. Based on the AI chat shell with a ticket list and KB panel. Replace placeholder tickets and answers with the user's support domain. Keep the React + Vite + Tailwind stack.",
-    prompt:
-      "Customize this support starter into a {name}. Shape the shell for tickets + live chat + KB answers + human handoff. Replace placeholder content with plausible support examples. Keep the React + Vite + Tailwind stack.",
-    variants: ["AI Helpdesk", "AI Ticketing", "AI Live Chat", "AI Voice Support", "AI Email Support", "AI Knowledge Support", "AI E-commerce Support", "AI SaaS Support", "AI Enterprise Support", "AI Omnichannel Support"],
-  },
-  {
-    id: "ai-search",
-    name: "AI Search",
-    section: "ai",
-    emoji: "🔎",
-    archetype: "ai-app",
-    tagline: "Search shell — query bar, results, sources, filters.",
-    features: ["Query bar", "Results list", "Sources", "Filters", "Dark mode"],
-    brief:
-      "AI search starter scaffolded by RIDE. Based on the AI chat shell, shaped as query → results → sources. Replace placeholder results with the user's search domain. Keep the React + Vite + Tailwind stack.",
-    prompt:
-      "Customize this search starter into a {name}. Shape the shell for query bar, result cards, source citations and filters. Replace placeholder content with plausible search examples. Keep the React + Vite + Tailwind stack.",
-    variants: ["AI Web Search", "AI Research Search", "Enterprise Search", "Document Search", "Code Search", "Academic Search", "Product Search", "Semantic Search", "Multimodal Search", "AI Knowledge Search"],
-  },
-
-  // ─── Mobile ──────────────────────────────────────────────────────────────
+// ─── Mobile ──────────────────────────────────────────────────────────────
   {
     id: "mobile-social",
     name: "Mobile Social",
