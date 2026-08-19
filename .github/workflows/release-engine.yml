@@ -1,0 +1,323 @@
+name: RIDE Release Engine
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: "Version bump type (auto detects from commits if not specified)"
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
+      channel:
+        description: "Release channel"
+        type: choice
+        options: [stable, beta, alpha]
+        default: stable
+      dry_run:
+        description: "Run all steps but don't publish release"
+        type: boolean
+        default: false
+
+  push:
+    branches: [main, master]
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+env:
+  NODE_VERSION: "24"
+  PNPM_VERSION: "11.21.0"
+
+jobs:
+  # ===========================================
+  # QUALITY GATES - Run on every push
+  # ===========================================
+  quality-gates:
+    name: Quality Gates
+    runs-on: windows-latest
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.next }}
+      bump: ${{ steps.version.outputs.bump }}
+      should_release: ${{ steps.release_decision.outputs.should_release }}
+      channel: ${{ steps.release_decision.outputs.channel }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run typecheck
+        run: pnpm run typecheck
+
+      - name: Build all packages
+        run: pnpm run build
+
+      - name: Analyze version bump
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_type }}" = "tag" ]; then
+            NEXT="${GITHUB_REF_NAME#v}"
+            BUMP="tag"
+          else
+            node scripts/semantic-version.mjs --json > version-analysis.json
+            cat version-analysis.json
+            NEXT=$(jq -r .next version-analysis.json)
+            BUMP=$(jq -r .bump version-analysis.json)
+          fi
+          echo "next=$NEXT" >> $GITHUB_OUTPUT
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
+
+      - name: Determine release strategy
+        id: release_decision
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "channel=stable" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "channel=${{ github.event.inputs.channel }}" >> $GITHUB_OUTPUT
+          else
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            echo "channel=none" >> $GITHUB_OUTPUT
+          fi
+
+  # ===========================================
+  # BUILD & PACKAGE - Only if quality gates pass
+  # ===========================================
+  build:
+    name: Build & Package
+    needs: quality-gates
+    if: needs.quality-gates.outputs.should_release == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    outputs:
+      version: ${{ needs.quality-gates.outputs.version }}
+      channel: ${{ needs.quality-gates.outputs.channel }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Write version to package.json
+        shell: bash
+        run: |
+          node scripts/semantic-version.mjs --set "${{ needs.quality-gates.outputs.version }}"
+          node -p "require('./package.json').version"
+
+      - name: Build production
+        run: pnpm run build
+        env:
+          NODE_ENV: production
+
+      - name: Package Windows installer
+        id: package
+        shell: bash
+        working-directory: apps/desktop
+        run: |
+          npx electron-builder --win nsis --publish never
+          ls -la output/
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ride-installer-${{ needs.quality-gates.outputs.version }}
+          path: apps/desktop/output/*.exe
+          retention-days: 30
+
+      - name: Upload update metadata artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ride-update-metadata-${{ needs.quality-gates.outputs.version }}
+          path: |
+            apps/desktop/output/latest.yml
+            apps/desktop/output/*.blockmap
+          retention-days: 30
+
+  # ===========================================
+  # SAFETY CHECK - Block broken releases
+  # ===========================================
+  safety-check:
+    name: Release Safety Check
+    needs: [quality-gates, build]
+    if: needs.quality-gates.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Download installer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ride-installer-${{ needs.quality-gates.outputs.version }}
+          path: ./installer
+
+      - name: Verify installer integrity
+        run: |
+          echo "Verifying installer integrity..."
+          SIZE=$(stat -c%s ./installer/*.exe 2>/dev/null || stat -f%z ./installer/*.exe)
+          echo "Installer size: $SIZE bytes"
+          if [ $SIZE -lt 10000000 ]; then
+            echo "Installer too small (<10MB) - possible build failure"
+            exit 1
+          fi
+          if [ $SIZE -gt 500000000 ]; then
+            echo "Installer too large (>500MB) - possible bloat"
+            exit 1
+          fi
+          echo "Installer size OK"
+
+  # ===========================================
+  # RELEASE - Create GitHub Release with update feed
+  # ===========================================
+  release:
+    name: Create Release
+    needs: [quality-gates, build, safety-check]
+    if: needs.quality-gates.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download installer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ride-installer-${{ needs.quality-gates.outputs.version }}
+          path: ./installer
+
+      - name: Download update metadata artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ride-update-metadata-${{ needs.quality-gates.outputs.version }}
+          path: ./installer
+
+      - name: Prepare release notes
+        shell: bash
+        run: |
+          VERSION="${{ needs.quality-gates.outputs.version }}"
+          cat <<EOF > release-notes.md
+          ## RIDE v${VERSION}
+
+          ### Changes
+          $(git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 2>/dev/null || echo "")..HEAD 2>/dev/null || echo "Initial release")
+
+          ### Installation
+          1. Download the \`RIDE Setup ${VERSION}.exe\` installer
+          2. Run installer (creates desktop shortcut)
+          3. Launch RIDE
+
+          ### Auto-update
+          Existing installations will detect this update automatically on next startup.
+          EOF
+          cat release-notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.quality-gates.outputs.version }}
+          name: RIDE v${{ needs.quality-gates.outputs.version }}
+          body_path: release-notes.md
+          files: |
+            ./installer/*.exe
+            ./installer/*.yml
+            ./installer/*.blockmap
+          draft: ${{ github.event.inputs.dry_run == 'true' }}
+          prerelease: ${{ needs.quality-gates.outputs.channel != 'stable' }}
+          make_latest: ${{ needs.quality-gates.outputs.channel == 'stable' }}
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ===========================================
+  # RELEASE STATUS DASHBOARD
+  # ===========================================
+  status-dashboard:
+    name: Release Status Dashboard
+    if: always()
+    needs: [quality-gates, build, safety-check, release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Generate release status
+        shell: bash
+        run: |
+          echo "Generating release status..."
+          VER="${{ needs.quality-gates.outputs.version }}"
+          CHAN="${{ needs.quality-gates.outputs.channel }}"
+          BUMP="${{ needs.quality-gates.outputs.bump }}"
+
+          cat >> $GITHUB_STEP_SUMMARY <<'EOF'
+          # RIDE Release Status Dashboard
+
+          ## Release Info
+          - **Version**: v${VER:-N/A}
+          - **Channel**: ${CHAN:-N/A}
+          - **Bump Type**: ${BUMP:-N/A}
+          - **Trigger**: ${{ github.event_name }}
+          - **Commit**: ${{ github.sha }}
+
+          ## Pipeline Status
+          - Quality Gates: ${{ needs.quality-gates.result }}
+          - Build & Package: ${{ needs.build.result }}
+          - Safety Check: ${{ needs.safety-check.result }}
+          - Release: ${{ needs.release.result }}
+
+          ## Artifacts
+          - Installer: \`RIDE Setup ${VER:-N/A}.exe\`
+          - GitHub Release: [View](https://github.com/${{ github.repository }}/releases/tag/v${VER:-N/A})
+
+          ## Next Actions
+          ${{ needs.release.result == 'success' && 'Release complete - installed RIDE versions will show the update popup on next startup' || '' }}
+          ${{ needs.quality-gates.result != 'success' && 'Quality gates failed - fix and re-run' || '' }}
+          EOF

@@ -1,0 +1,34 @@
+appId: com.ride.app
+productName: RIDE
+copyright: "Copyright © 2026 RIDE"
+directories:
+  output: output
+files:
+  - out/**/*
+  - resources/**/*
+  - package.json
+  - node_modules/node-pty/**/*
+extraResources:
+  - from: resources
+    to: resources
+npmRebuild: false
+win:
+  target:
+    - nsis
+  icon: resources/icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: RIDE
+  uninstallDisplayName: RIDE IDE
+  # Installer metadata
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
+  # Staged rollout support via GitHub Releases
+  # The installer will check for updates from the configured channel
+publish:
+  - provider: github
+    owner: Vishalsaraswat047
+    repo: Ride-IDE-Main

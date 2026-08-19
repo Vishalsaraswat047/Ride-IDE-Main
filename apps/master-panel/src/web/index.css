@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #171717;
+  --color-canvas-soft: #1d1d1d;
+  --color-canvas-soft2: #222222;
+  --color-ink: #ededed;
+  --color-body: #a1a1a1;
+  --color-mute: #6f6f6f;
+  --color-hairline: #2a2a2a;
+  --color-hairline-strong: #4d4d4d;
+  --color-primary: #f2f2f2;
+  --color-on-primary: #171717;
+  --color-ember: #ff7a3d;
+  --color-brand-magenta: #e02040;
+  --color-link: #4d94ff;
+  --color-success: #4d94ff;
+  --color-error: #ff5252;
+  --color-warning: #ffb84d;
+  --color-violet: #e06bb8;
+  --color-cyan: #5eead4;
+  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 5px;
+  border: 2px solid #171717;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.master-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #333 transparent;
+}
+
+input,
+select,
+textarea {
+  outline: none;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 1px solid var(--color-ember);
+  outline-offset: 1px;
+}

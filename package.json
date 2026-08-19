@@ -15,7 +15,14 @@
     "version:patch": "node scripts/bump-version.js patch",
     "version:minor": "node scripts/bump-version.js minor",
     "version:major": "node scripts/bump-version.js major",
-    "release": "pnpm version:patch && git push && git push --tags"
+    "release": "node scripts/release.mjs",
+    "release:patch": "node scripts/release.mjs patch",
+    "release:minor": "node scripts/release.mjs minor",
+    "release:major": "node scripts/release.mjs major",
+    "release:beta": "node scripts/release.mjs beta",
+    "release:alpha": "node scripts/release.mjs alpha",
+    "release:dry-run": "node scripts/release.mjs --dry-run",
+    "version:analyze": "node scripts/semantic-version.mjs"
   },
   "devDependencies": {
     "turbo": "^2.5.0",
